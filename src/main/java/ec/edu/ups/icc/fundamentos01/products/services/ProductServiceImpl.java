@@ -104,19 +104,19 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
     }
 
-    @Override
-    public List<ProductResponseDto> findByCategoryId(Long categoryId) {
+    // @Override
+    // public List<ProductResponseDto> findByCategoryId(Long categoryId) {
 
-        // Validar que la categoría existe
-        if (!categoryRepo.existsById(categoryId)) {
-            throw new NotFoundException("Categoría no encontrada con ID: " + categoryId);
-        }
+    //     // Validar que la categoría existe
+    //     if (!categoryRepo.existsById(categoryId)) {
+    //         throw new NotFoundException("Categoría no encontrada con ID: " + categoryId);
+    //     }
 
-        return productRepo.findByCategoriesId(categoryId)
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
-    }
+    //     return productRepo.findByCategoriesId(categoryId)
+    //             .stream()
+    //             .map(this::toResponseDto)
+    //             .toList();
+    // }
 
     @Override
     public ProductResponseDto update(Long id, UpdateProductDto dto) {
@@ -150,7 +150,28 @@ public class ProductServiceImpl implements ProductService {
         // Eliminación física (también se puede implementar lógica)
         productRepo.delete(product);
     }
-
+@Override
+    public Page<ProductResponseDto> findByUserIdWithFilters(
+            Long userId, String name, Double minPrice, Double maxPrice, Long categoryId,
+            int page, int size, String[] sort) {
+        
+        // 1. Validar que el usuario existe
+        if (!userRepo.existsById(userId)) {
+            throw new NotFoundException("Usuario no encontrado con ID: " + userId);
+        }
+        
+        // 2. Validar filtros
+        validateFilterParameters(minPrice, maxPrice);
+        
+        // 3. Crear Pageable
+        Pageable pageable = createPageable(page, size, sort);
+        
+        // 4. Consulta con filtros y paginación
+        Page<ProductEntity> productPage = productRepo.findByUserIdWithFilters(
+            userId, name, minPrice, maxPrice, categoryId, pageable);
+        
+        return productPage.map(this::toResponseDto);
+    }
     private ProductResponseDto toResponseDto(ProductEntity entity) {
         ProductResponseDto dto = new ProductResponseDto();
         dto.id = entity.getId();
@@ -208,36 +229,61 @@ public class ProductServiceImpl implements ProductService {
         
         return PageRequest.of(page, size, sortObj);
     }
-    private Sort createSort(String[] sort) {
-        if (sort == null || sort.length == 0) {
-            return Sort.by("id");
+private Sort createSort(String[] sort) {
+    if (sort == null || sort.length == 0) {
+        return Sort.by("id");
+    }
+
+    List<Sort.Order> orders = new ArrayList<>();
+
+    for (int i = 0; i < sort.length; i++) {
+        String current = sort[i].trim();
+
+        // 1. Si el elemento es "asc" o "desc", lo ignoramos porque ya fue 
+        // procesado como dirección del elemento anterior
+        if (current.equalsIgnoreCase("asc") || current.equalsIgnoreCase("desc")) {
+            continue;
         }
 
-        List<Sort.Order> orders = new ArrayList<>();
-        for (String sortParam : sort) {
-            String[] parts = sortParam.split(",");
-            String property = parts[0];
-            String direction = parts.length > 1 ? parts[1] : "asc";
-            
-            // Validar propiedades permitidas para evitar inyección SQL
-            if (!isValidSortProperty(property)) {
-                throw new BadRequestException("Propiedad de ordenamiento no válida: " + property);
+        String property;
+        String direction = "asc";
+
+        // 2. CASO A: El string tiene coma (ej: "name,desc")
+        if (current.contains(",")) {
+            String[] parts = current.split(",");
+            property = parts[0].trim();
+            direction = parts.length > 1 ? parts[1].trim() : "asc";
+        } 
+        // 3. CASO B: El string es solo la propiedad (ej: "name")
+        else {
+            property = current;
+            // Miramos si el siguiente elemento en el array es la dirección
+            if (i + 1 < sort.length) {
+                String next = sort[i + 1].trim();
+                if (next.equalsIgnoreCase("asc") || next.equalsIgnoreCase("desc")) {
+                    direction = next;
+                }
             }
-            
-            Sort.Order order = "desc".equalsIgnoreCase(direction) 
-                ? Sort.Order.desc(property)
-                : Sort.Order.asc(property);
-            
-            orders.add(order);
         }
-        
-        return Sort.by(orders);
+
+        // 4. Validar solo la propiedad
+        if (!isValidSortProperty(property)) {
+            throw new BadRequestException("Propiedad de ordenamiento no válida: " + property);
+        }
+
+        orders.add("desc".equalsIgnoreCase(direction) 
+            ? Sort.Order.desc(property) 
+            : Sort.Order.asc(property));
     }
+
+    return orders.isEmpty() ? Sort.by("id") : Sort.by(orders);
+}
+
      private boolean isValidSortProperty(String property) {
         // Lista blanca de propiedades permitidas para ordenamiento
         Set<String> allowedProperties = Set.of(
             "id", "name", "price", "createdAt", "updatedAt",
-            "owner.name", "owner.email", "category.name"
+            "owner.name", "owner.email", "categories.name"
         );
         return allowedProperties.contains(property);
     }

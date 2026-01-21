@@ -21,7 +21,7 @@ public interface ProductService {
 
     List<ProductResponseDto> findByUserId(Long id);
 
-    List<ProductResponseDto> findByCategoryId(Long id);
+    //List<ProductResponseDto> findByCategoryId(Long id);
 
     ProductResponseDto update(Long id, UpdateProductDto dto);
     Slice<ProductResponseDto> findAllSlice(int page, int size, String[] sort);
@@ -32,6 +32,16 @@ public interface ProductService {
         Long categoryId,
         int page, 
         int size, 
+        String[] sort
+    );
+    Page<ProductResponseDto> findByUserIdWithFilters(
+        Long userId,
+        String name,
+        Double minPrice,
+        Double maxPrice,
+        Long categoryId,
+        int page,
+        int size,
         String[] sort
     );
     void delete(Long id);

@@ -36,14 +36,15 @@ public class ProductController {
         this.productService = productService;
     }
     @GetMapping("/slice")
-    public ResponseEntity<Slice<ProductResponseDto>> findAllSlice(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String[] sort) {
+public ResponseEntity<Slice<ProductResponseDto>> findAllSlice(
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "10") int size,
+        @RequestParam(name = "sort", defaultValue = "id") String[] sort) {
 
-        Slice<ProductResponseDto> products = productService.findAllSlice(page, size, sort);
-        return ResponseEntity.ok(products);
-    }
+    Slice<ProductResponseDto> products = productService.findAllSlice(page, size, sort);
+    return ResponseEntity.ok(products);
+}
+
 
     // ============== PAGINACIÓN CON FILTROS (CONTINUANDO TEMA 09) ==============
 
@@ -52,21 +53,22 @@ public class ProductController {
      * Ejemplo: GET /api/products/search?name=laptop&minPrice=500&page=0&size=5
      */
     @GetMapping("/search")
-    public ResponseEntity<Page<ProductResponseDto>> findWithFilters(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String[] sort) {
+public ResponseEntity<Page<ProductResponseDto>> findWithFilters(
+        @RequestParam(name = "name", required = false) String name,
+        @RequestParam(name = "minPrice", required = false) Double minPrice,
+        @RequestParam(name = "maxPrice", required = false) Double maxPrice,
+        @RequestParam(name = "categoryId", required = false) Long categoryId,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "size", defaultValue = "10") int size,
+        @RequestParam(name = "sort", defaultValue = "createdAt") String[] sort) {
 
-        Page<ProductResponseDto> products = productService.findWithFilters(
-            name, minPrice, maxPrice, categoryId, page, size, sort);
-        
-        return ResponseEntity.ok(products);
-    }
-    @GetMapping("/paginated")
+    Page<ProductResponseDto> products = productService.findWithFilters(
+        name, minPrice, maxPrice, categoryId, page, size, sort);
+
+    return ResponseEntity.ok(products);
+}
+
+    @GetMapping()
     public ResponseEntity<Page<ProductResponseDto>> findAllPaginado(
             @RequestParam(value="page",defaultValue = "0") int page,
             @RequestParam(value="size",defaultValue = "10") int size,
@@ -81,11 +83,11 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> findAll() {
-        List<ProductResponseDto> products = productService.findAll();
-        return ResponseEntity.ok(products);
-    }
+    // @GetMapping
+    // public ResponseEntity<List<ProductResponseDto>> findAll() {
+    //     List<ProductResponseDto> products = productService.findAll();
+    //     return ResponseEntity.ok(products);
+    // }
 
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponseDto> findById(@PathVariable("id") String id) {
@@ -99,11 +101,7 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-    @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<ProductResponseDto>> findByCategoryId(@PathVariable("categoryId") Long categoryId) {
-        List<ProductResponseDto> products = productService.findByCategoryId(categoryId);
-        return ResponseEntity.ok(products);
-    }
+  
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponseDto> update(
