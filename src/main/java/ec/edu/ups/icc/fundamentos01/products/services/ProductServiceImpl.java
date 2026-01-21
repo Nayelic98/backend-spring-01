@@ -178,16 +178,19 @@ public class ProductServiceImpl implements ProductService {
         dto.name = entity.getName();
         dto.price = entity.getPrice();
         dto.description = entity.getDescription();
-
+        dto.createdAt = entity.getCreatedAt();
+    dto.updatedAt = entity.getUpdatedAt();
         ProductResponseDto.UserSummaryDto ownerDto = new ProductResponseDto.UserSummaryDto();
         ownerDto.id = entity.getOwner().getId();
         ownerDto.name = entity.getOwner().getName();
+        ownerDto.email = entity.getOwner().getEmail();
 
         List<CategoryResponseDto> categoryDtos = new ArrayList<>();
         for (CategoryEntity categoryEntity : entity.getCategories()) {
             CategoryResponseDto categoryDto = new CategoryResponseDto();
             categoryDto.id = categoryEntity.getId();
             categoryDto.name = categoryEntity.getName();
+            categoryDto.description = categoryEntity.getDescription();
             categoryDtos.add(categoryDto);
         }
         dto.user = ownerDto;
@@ -280,7 +283,6 @@ private Sort createSort(String[] sort) {
 }
 
      private boolean isValidSortProperty(String property) {
-        // Lista blanca de propiedades permitidas para ordenamiento
         Set<String> allowedProperties = Set.of(
             "id", "name", "price", "createdAt", "updatedAt",
             "owner.name", "owner.email", "categories.name"
@@ -304,12 +306,14 @@ private Sort createSort(String[] sort) {
     }
 
     @Override
-    public Slice<ProductResponseDto> findAllSlice(int page, int size, String[] sort) {
-        Pageable pageable = createPageable(page, size, sort);
-        Slice<ProductEntity> productSlice = productRepo.findAll(pageable);
-        
-        return productSlice.map(this::toResponseDto);
-    }
+public Slice<ProductResponseDto> findAllSlice(int page, int size, String[] sort) {
+    Pageable pageable = createPageable(page, size, sort);
+    
+    
+    Slice<ProductEntity> productSlice = productRepo.findBy(pageable); 
+    
+    return productSlice.map(this::toResponseDto);
+}
 
      @Override
     public Page<ProductResponseDto> findWithFilters(

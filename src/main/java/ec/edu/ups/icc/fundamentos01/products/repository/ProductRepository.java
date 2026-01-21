@@ -29,7 +29,7 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
          * SELECT p.* FROM products p JOIN users u ON p.user_id = u.id WHERE u.name = ?
          */
         List<ProductEntity> findByOwnerName(String ownerName);
-
+    Slice<ProductEntity> findBy(Pageable pageable);
         /**
          * Encuentra productos que tienen UNA categoría específica
          * Útil para filtros de categoría
