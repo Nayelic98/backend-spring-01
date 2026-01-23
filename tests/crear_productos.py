@@ -13,11 +13,15 @@ TECH_PRODUCTS = [
 ]
 
 def run_seeder():
-    print("🚀 INICIANDO CARGA TOTAL (1000 PRODUCTOS REALES)")
+    print("INICIANDO CARGA TOTAL (1000 PRODUCTOS REALES)")
     
     # 1. OBTENER O CREAR USUARIOS
     user_ids = []
-    u_data = {"name": "User Test", "email": f"test{random.randint(1,9999)}@ups.edu.ec", "password": "password123"}
+    u_data = {
+        "name": "User Test",
+        "email": f"test{random.randint(1,9999)}@ups.edu.ec",
+        "password": "password123"
+    }
     requests.post(f"{BASE_URL}/users", json=u_data)
     
     res_users = requests.get(f"{BASE_URL}/users")
@@ -27,7 +31,7 @@ def run_seeder():
         user_ids = [u['id'] for u in items]
     
     if not user_ids:
-        print("❌ No hay usuarios.")
+        print("No hay usuarios registrados.")
         return
 
     # 2. ASEGURAR CATEGORÍAS
@@ -42,17 +46,19 @@ def run_seeder():
         items = cats_data.get('content', cats_data) if isinstance(cats_data, dict) else cats_data
         category_ids = [c['id'] for c in items]
 
-    # 3. CREAR 1000 PRODUCTOS (CON BUCLE DE SEGURIDAD)
-    print(f"📦 Insertando 1000 productos...")
+    if not category_ids:
+        print("No hay categorías disponibles.")
+        return
+
+    # 3. CREAR 1000 PRODUCTOS
+    print("Insertando 1000 productos...")
     success = 0
-    intentos = 0 # Para evitar bucles infinitos en caso de error de servidor
+    intentos = 0
 
     while success < 1000 and intentos < 3000:
         intentos += 1
         
-        # Generamos un nombre con un sufijo para asegurar unicidad
         product_base = random.choice(TECH_PRODUCTS)
-        # Se agrega un sufijo aleatorio para evitar que el Service lo rechace por "Duplicate Name"
         product_name = f"{product_base} {fake.catch_phrase().split()[-1].capitalize()} {random.randint(100, 9999)}"
         product_name = product_name[:145]
 
@@ -69,12 +75,11 @@ def run_seeder():
         if res_p.status_code in [200, 201]:
             success += 1
             if success % 100 == 0:
-                print(f"   ✅ {success} productos creados...")
+                print(f"{success} productos creados")
         else:
-            # Si falla (ej. por nombre duplicado), el bucle 'while' permite intentar de nuevo
-            continue 
+            continue
 
-    print(f"\n✨ CARGA COMPLETADA: {success} productos reales insertados.")
+    print(f"CARGA COMPLETADA: {success} productos insertados.")
 
 if __name__ == "__main__":
     run_seeder()

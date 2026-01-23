@@ -104,4 +104,4 @@ if __name__ == "__main__":
     test_validation_error()
     test_invalid_sort_field()
 
-    print("\n✔ Pruebas finalizadas")
+    print("\nPruebas finalizadas")
