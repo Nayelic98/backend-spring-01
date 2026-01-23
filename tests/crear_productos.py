@@ -9,7 +9,7 @@ TECH_PRODUCTS = [
     "Laptop", "Smartphone", "Monitor 4K", "Teclado Mecánico", "Mouse Gamer", 
     "Tablet", "Auriculares Bluetooth", "Smartwatch", "Cámara DSLR", 
     "Tarjeta Gráfica", "Memoria RAM", "Disco SSD", "Router WiFi 6", 
-    "Impresora Láser", "Microscopio Digital", "Consola de Juegos"
+    "Impresora Láser", "Microscopio Digital", "Gaming"
 ]
 
 def run_seeder():
