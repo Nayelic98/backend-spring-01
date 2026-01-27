@@ -17,10 +17,7 @@ public class RegisterRequestDto {
 
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6, max = 100, message = "La contraseña debe tener entre 6 y 100 caracteres")
-    @Pattern(
-        regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).*$",
-        message = "La contraseña debe contener al menos una mayúscula, una minúscula y un número"
-    )
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).*$", message = "La contraseña debe contener al menos una mayúscula, una minúscula y un número")
     private String password;
 
     // Constructores
@@ -56,5 +53,5 @@ public class RegisterRequestDto {
     public void setPassword(String password) {
         this.password = password;
     }
-    
+
 }

@@ -29,8 +29,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
-                          JwtAuthenticationEntryPoint unauthorizedHandler,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationEntryPoint unauthorizedHandler,
+            JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.userDetailsService = userDetailsService;
         this.unauthorizedHandler = unauthorizedHandler;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -41,14 +41,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * DaoAuthenticationProvider: Proveedor de autenticación que conecta:
-     * - UserDetailsService: Carga información del usuario desde BD
-     * - PasswordEncoder: Valida la contraseña hasheada
-     * 
-     * Spring Security usa este provider para autenticar credenciales.
-     * El constructor acepta directamente el UserDetailsService en Spring Boot 3.x/4.x
-     */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
@@ -63,37 +55,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            // Deshabilitar CSRF (no necesario para APIs REST con JWT)
-            .csrf(AbstractHttpConfigurer::disable)
+        http.csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(unauthorizedHandler))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
 
-            // Configurar manejo de excepciones de autenticación
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(unauthorizedHandler)
-            )
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/status/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
 
-            // Configurar sesiones como stateless (no usar sesiones HTTP)
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-
-            // Configurar autorización de requestss
-            .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos (sin autenticación)
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/status/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                
-                // Todos los demás endpoints requieren autenticación
-                .anyRequest().authenticated()
-            );
-
-        // Agregar proveedor de autenticación
+                        .anyRequest().authenticated());
         http.authenticationProvider(authenticationProvider());
-
-        // Agregar filtro JWT antes del filtro de autenticación estándar
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 }

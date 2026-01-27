@@ -1,19 +1,18 @@
 package ec.edu.ups.icc.fundamentos01.security.init;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import ec.edu.ups.icc.fundamentos01.security.models.RoleEntity;
+import ec.edu.ups.icc.fundamentos01.security.models.RoleName;
+import ec.edu.ups.icc.fundamentos01.security.repository.RoleRepository;
+import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
+import ec.edu.ups.icc.fundamentos01.users.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import ec.edu.ups.icc.fundamentos01.security.models.RoleEntity;
-import ec.edu.ups.icc.fundamentos01.security.models.RoleName;
-import ec.edu.ups.icc.fundamentos01.security.repository.RoleRepository;
-import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
-import ec.edu.ups.icc.fundamentos01.users.repository.UserRepository;
+import java.util.HashSet;
+import java.util.Set;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -34,10 +33,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // 1. Inicializar roles
+
         initializeRoles();
 
-        // 2. Crear usuario admin por defecto
         createDefaultAdminUser();
     }
 
@@ -66,7 +64,6 @@ public class DataInitializer implements CommandLineRunner {
             admin.setEmail(adminEmail);
             admin.setPassword(passwordEncoder.encode("admin123"));
 
-            // Asignar rol ADMIN
             RoleEntity adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
                     .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
 

@@ -1,228 +1,160 @@
 package ec.edu.ups.icc.fundamentos01.users.services;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-
 import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
 import ec.edu.ups.icc.fundamentos01.categories.entity.CategoryEntity;
-import ec.edu.ups.icc.fundamentos01.exceptions.domain.BadRequestException;
+import ec.edu.ups.icc.fundamentos01.exceptions.domain.ConflictException;
 import ec.edu.ups.icc.fundamentos01.exceptions.domain.NotFoundException;
 import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
-
 import ec.edu.ups.icc.fundamentos01.products.models.ProductEntity;
 import ec.edu.ups.icc.fundamentos01.products.repository.ProductRepository;
-import ec.edu.ups.icc.fundamentos01.users.dtos.CreateUserDto;
-import ec.edu.ups.icc.fundamentos01.users.dtos.PartialUpdateUserDto;
-import ec.edu.ups.icc.fundamentos01.users.dtos.UpdateUserDto;
-import ec.edu.ups.icc.fundamentos01.users.dtos.UserResponseDto;
-import ec.edu.ups.icc.fundamentos01.users.mappers.UserMapper;
-import ec.edu.ups.icc.fundamentos01.users.models.User;
+import ec.edu.ups.icc.fundamentos01.users.dtos.*;
 import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
 import ec.edu.ups.icc.fundamentos01.users.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
-    private final UserRepository userRepo;
-    private final ProductRepository productRepo;
 
-    public UserServiceImpl(UserRepository userRepo, ProductRepository productRepo) {
-        this.userRepo = userRepo;
-        this.productRepo = productRepo;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+
+    public UserServiceImpl(UserRepository userRepository, ProductRepository productRepository) {
+        this.userRepository = userRepository;
+        this.productRepository = productRepository;
     }
 
     @Override
     public List<UserResponseDto> findAll() {
-        return userRepo.findAll()
-                .stream()
-                .map(User::fromEntity) // Entity → Domain
-                .map(UserMapper::toResponse) // Domain → DTO
+        return userRepository.findAll().stream()
+                .map(this::toResponseDto)
                 .toList();
     }
 
+    // CORRECCIÓN 1: Devolver UserResponseDto en lugar de Object
     @Override
     public UserResponseDto findOne(int id) {
-        return userRepo.findById((long) id)
-                .map(User::fromEntity)
-                .map(UserMapper::toResponse)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        return userRepository.findById((long) id)
+                .map(this::toResponseDto)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID: " + id));
     }
 
     @Override
     public UserResponseDto create(CreateUserDto dto) {
-
-        // Regla: email único
-        if (userRepo.findByEmail(dto.email).isPresent()) {
-            throw new IllegalStateException("El email ya está registrado");
+        if (userRepository.findByEmail(dto.email).isPresent()) {
+            throw new ConflictException("El email ya está registrado: " + dto.email);
         }
 
-        User user = UserMapper.fromCreateDto(dto);
+        UserEntity user = new UserEntity();
+        user.setName(dto.name);
+        user.setEmail(dto.email);
+        user.setPassword(dto.password);
 
-        UserEntity saved = userRepo.save(user.toEntity());
-
-        return UserMapper.toResponse(User.fromEntity(saved));
-
+        UserEntity savedEntity = userRepository.save(user);
+        return toResponseDto(savedEntity);
     }
 
+    // CORRECCIÓN 2: Devolver UserResponseDto en lugar de Object
     @Override
     public UserResponseDto update(int id, UpdateUserDto dto) {
+        UserEntity user = userRepository.findById((long) id)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID: " + id));
 
-        return userRepo.findById((long) id)
-                // Entity → Domain
-                .map(User::fromEntity)
+        user.setName(dto.name);
+        user.setPassword(dto.password);
 
-                // Aplicar cambios permitidos en el dominio
-                .map(u -> u.update(dto))
-
-                // Domain → Entity
-                .map(User::toEntity)
-
-                // Persistencia
-                .map(userRepo::save)
-
-                // Entity → Domain
-                .map(User::fromEntity)
-
-                // Domain → DTO
-                .map(UserMapper::toResponse)
-
-                // Error controlado si no existe
-                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+        return toResponseDto(userRepository.save(user));
     }
 
+    // CORRECCIÓN 3: Devolver UserResponseDto en lugar de Object
     @Override
     public UserResponseDto partialUpdate(int id, PartialUpdateUserDto dto) {
+        UserEntity user = userRepository.findById((long) id)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID: " + id));
 
-        return userRepo.findById((long) id)
-                // Entity → Domain
-                .map(User::fromEntity)
+        if (dto.name != null)
+            user.setName(dto.name);
+        if (dto.password != null)
+            user.setPassword(dto.password);
 
-                // Aplicar solo los cambios presentes
-                .map(user -> user.partialUpdate(dto))
-
-                // Domain → Entity
-                .map(User::toEntity)
-
-                // Persistencia
-                .map(userRepo::save)
-
-                // Entity → Domain
-                .map(User::fromEntity)
-
-                // Domain → DTO
-                .map(UserMapper::toResponse)
-
-                // Error si no existe
-                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+        return toResponseDto(userRepository.save(user));
     }
 
+    // CORRECCIÓN 4: Cambiar a void (seguramente así está en la interfaz) y quitar
+    // el return
     @Override
     public void delete(int id) {
-
-        // Verifica existencia y elimina
-        userRepo.findById((long) id)
-                .ifPresentOrElse(
-                        userRepo::delete,
-                        () -> {
-                            throw new IllegalStateException("Usuario no encontrado");
-                        });
+        if (!userRepository.existsById((long) id)) {
+            throw new NotFoundException("No se puede eliminar. Usuario no encontrado con ID: " + id);
+        }
+        userRepository.deleteById((long) id);
     }
+
+    // ================= MÉTODOS RELACIONADOS CON PRODUCTOS =================
 
     @Override
     public List<ProductResponseDto> getProductsByUserId(Long userId) {
-
-        // 1. Validar que el usuario existe
-        if (!userRepo.existsById(userId)) {
+        if (!userRepository.existsById(userId)) {
             throw new NotFoundException("Usuario no encontrado con ID: " + userId);
         }
-
-        // 2. Consulta explícita al repositorio correcto
-        List<ProductEntity> products = productRepo.findByOwnerId(userId);
-
-        /*
-         * Flujo correcto:
-         * ProductEntity → ProductResponseDto
-         *
-         * No se pasa por el dominio (Product) porque:
-         * - Es un endpoint de solo lectura (GET)
-         * - No se aplican reglas de negocio
-         * - El dominio no agrega valor en este caso
-         * - Evitamos perder relaciones (user, categories)
-         */
-        // 3. Mapear a DTOs
-        return products.stream()
-                .map(this::toResponseDto)
-                .collect(Collectors.toList());
+        return productRepository.findByOwnerId(userId).stream()
+                .map(this::mapProductToDto)
+                .toList();
     }
 
     @Override
-    public List<ProductResponseDto> getProductsByUserIdWithFilters(
-            Long userId,
-            String name,
-            Double minPrice,
-            Double maxPrice,
-            Long categoryId) {
+    @Transactional(readOnly = true)
+    public List<ProductResponseDto> getProductsByUserIdWithFilters(Long userId, String name, Double minPrice,
+            Double maxPrice, Long categoryId) {
 
-        // Verificar que el usuario existe
-        if (!userRepo.existsById(userId)) {
-            throw new NotFoundException("Usuario no encontrado");
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException("Usuario no encontrado con ID: " + userId);
         }
 
-        // 2. Validaciones de filtros
-        if (minPrice != null && minPrice < 0) {
-            throw new BadRequestException("El precio mínimo no puede ser negativo");
-        }
+        Page<ProductEntity> page = productRepository.findByUserIdWithFilters(
+                userId, name, minPrice, maxPrice, categoryId, Pageable.unpaged());
 
-        if (maxPrice != null && maxPrice < 0) {
-            throw new BadRequestException("El precio máximo no puede ser negativo");
-        }
-
-        if (minPrice != null && maxPrice != null && maxPrice < minPrice) {
-            throw new BadRequestException("El precio máximo debe ser mayor o igual al precio mínimo");
-        }
-
-        // 3. Consulta con filtros al repositorio correcto
-        List<ProductEntity> products = productRepo.findByOwnerIdWithFilters(
-                userId, name, minPrice, maxPrice, categoryId);
-
-        // 4. Mapear a DTOs
-        return products.stream()
-                .map(this::toResponseDto)
-                .collect(Collectors.toList());
+        return page.getContent().stream()
+                .map(this::mapProductToDto)
+                .toList();
     }
 
-    // ============== MÉTODO HELPER ==============
+    // ================= MAPPERS AUXILIARES =================
 
-    /**
-     * Convierte ProductEntity a ProductResponseDto
-     * NOTA: Este método podría estar en un mapper separado para mejor organización
-     */
-    private ProductResponseDto toResponseDto(ProductEntity entity) {
+    private UserResponseDto toResponseDto(UserEntity entity) {
+        UserResponseDto dto = new UserResponseDto();
+        // CORRECCIÓN 5: Usar .intValue() para convertir el Long a int sin errores
+        dto.id = entity.getId().intValue();
+        dto.name = entity.getName();
+        dto.email = entity.getEmail();
+        return dto;
+    }
+
+    private ProductResponseDto mapProductToDto(ProductEntity entity) {
         ProductResponseDto dto = new ProductResponseDto();
         dto.id = entity.getId();
         dto.name = entity.getName();
         dto.price = entity.getPrice();
         dto.description = entity.getDescription();
+        dto.createdAt = entity.getCreatedAt();
+        dto.updatedAt = entity.getUpdatedAt();
 
-        ProductResponseDto.UserSummaryDto ownerDto = new ProductResponseDto.UserSummaryDto();
-        ownerDto.id = entity.getOwner().getId();
-        ownerDto.name = entity.getOwner().getName();
-        ownerDto.email = entity.getOwner().getEmail();
-
-        List<CategoryResponseDto> categoryDtos = new ArrayList<>();
-        for (CategoryEntity categoryEntity : entity.getCategories()) {
-            CategoryResponseDto categoryDto = new CategoryResponseDto();
-            categoryDto.id = categoryEntity.getId();
-            categoryDto.name = categoryEntity.getName();
-            categoryDto.description = categoryEntity.getDescription();
-            categoryDtos.add(categoryDto);
+        if (entity.getCategories() != null) {
+            List<CategoryResponseDto> catDtos = new ArrayList<>();
+            for (CategoryEntity cat : entity.getCategories()) {
+                CategoryResponseDto c = new CategoryResponseDto();
+                c.id = cat.getId();
+                c.name = cat.getName();
+                c.description = cat.getDescription();
+                catDtos.add(c);
+            }
+            dto.categories = catDtos;
         }
-        dto.user = ownerDto;
-        dto.categories = categoryDtos;
         return dto;
-
     }
-
 }

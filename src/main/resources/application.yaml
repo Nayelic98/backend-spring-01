@@ -7,7 +7,6 @@ spring:
         password: ups123
     jpa:
         hibernate:
-           
             ddl-auto: update
         show-sql: true
         properties:
@@ -17,7 +16,7 @@ spring:
 server:
     port: 8080
 
-# ============== CONFIGURACIÓN DE JWT ==============
+    # ============== CONFIGURACIÓN DE JWT ==============
 jwt:
     # Secret key para firmar tokens (EN PRODUCCIÓN USAR VARIABLE DE ENTORNO)
     secret: ${JWT_SECRET:mySecretKeyForJWT2024MustBeAtLeast256BitsLongForHS256Algorithm}

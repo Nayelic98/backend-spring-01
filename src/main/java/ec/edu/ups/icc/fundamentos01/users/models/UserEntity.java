@@ -1,6 +1,5 @@
 package ec.edu.ups.icc.fundamentos01.users.models;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,41 +27,21 @@ public class UserEntity extends BaseModel {
      * Relación One-to-Many con Product
      * Un usuario puede tener múltiples productos
      */
-    // @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    // private List<ProductEntity> products = new ArrayList<>();
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<RoleEntity> roles = new HashSet<>();
 
-    // ============== RELACIÓN EXISTENTE CON PRODUCTOS ==============
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<RoleEntity> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
     private List<ProductEntity> products;
-     public UserEntity() {
+
+    public UserEntity() {
     }
 
     public UserEntity(String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;
-    }
-
-   
-    public void addRole(RoleEntity role) {
-        this.roles.add(role);
-        role.getUsers().add(this);
-    }
-
-    /**
-     * Verifica si el usuario tiene un rol específico
-     */
-    public boolean hasRole(RoleName roleName) {
-        return this.roles.stream()
-            .anyMatch(role -> role.getName().equals(roleName));
     }
 
     public String getName() {
@@ -105,5 +84,14 @@ public class UserEntity extends BaseModel {
         this.products = products;
     }
 
+    public void addRole(RoleEntity role) {
+        this.roles.add(role);
+        role.getUsers().add(this);
+    }
+
+    public boolean hasRole(RoleName roleName) {
+        return this.roles.stream()
+                .anyMatch(role -> role.getName().equals(roleName));
+    }
 
 }
