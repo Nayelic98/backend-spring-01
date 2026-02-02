@@ -12,7 +12,6 @@ public class UserMapper {
         return new User(id, name, email, "secret");
     }
 
-    // DTO -> Model
     public static User fromCreateDto(CreateUserDto dto) {
         return new User(0, dto.name, dto.email, dto.password);
     }   

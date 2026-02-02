@@ -37,7 +37,6 @@ public class ProductEntity extends BaseModel {
     // @ManyToOne(optional = false, fetch = FetchType.LAZY)
     // @JoinColumn(name = "category_id", nullable = false)
     // private CategoryEntity category;
-
     /**
      * Relación Many-to-Many con Category
      * Un producto puede tener múltiples categorías
