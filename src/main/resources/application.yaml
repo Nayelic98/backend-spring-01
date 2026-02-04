@@ -15,7 +15,6 @@ spring:
                 dialect: org.hibernate.dialect.PostgreSQLDialect
 server:
     port: 8080
-
     # ============== CONFIGURACIÓN DE JWT ==============
 jwt:
     # Secret key para firmar tokens (EN PRODUCCIÓN USAR VARIABLE DE ENTORNO)
